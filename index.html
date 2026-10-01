@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parkiran & Jajanan</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f6f8;--card:#fff;--tx:#1b2430;--mut:#6b7684;--pri:#1f6feb;--bd:#dde3ea;--ok:#188038;--bad:#d93025}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151c;--card:#1a212b;--tx:#e8edf3;--mut:#93a0ae;--pri:#5b9cff;--bd:#2c3745;--ok:#4cc06a;--bad:#ff6b60}}
+:root[data-theme="dark"]{--bg:#10151c;--card:#1a212b;--tx:#e8edf3;--mut:#93a0ae;--pri:#5b9cff;--bd:#2c3745;--ok:#4cc06a;--bad:#ff6b60}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 Arial,Helvetica,sans-serif;padding-bottom:84px}
+header{padding:12px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+h1{font-size:17px;margin:0}
+main{padding:0 12px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+input,select{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;min-width:0;width:100%}
+button{font:inherit;border:0;border-radius:8px;padding:8px 12px;background:var(--pri);color:#fff;cursor:pointer}
+button.g{background:var(--bg);color:var(--tx);border:1px solid var(--bd)}
+button.r{background:var(--bad)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}label{display:block}label input{margin-top:2px}
+.cnt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.cnt b{font-size:30px;min-width:56px;text-align:center}
+.cnt button{width:64px;font-size:22px;padding:10px 0;flex:none}
+.big{font-size:20px;font-weight:bold}
+.mut{color:var(--mut);font-size:13px}
+.it{border-top:1px solid var(--bd);padding:10px 0}
+.it:first-of-type{border-top:0}
+.sm{flex:none;width:44px;padding:6px 0}
+.neg{color:var(--bad)}.pos{color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:5px 4px;border-bottom:1px solid var(--bd);text-align:right}
+th:first-child,td:first-child{text-align:left}
+.wrap{overflow-x:auto}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:12px 4px;font-size:13px}
+nav button.on{color:var(--pri);font-weight:bold}
+</style></head><body>
+<header><h1>Parkiran & Jajanan</h1><input type="date" id="dt" style="width:auto" onchange="setDate(this.value)"></header>
+<main id="app"></main>
+<nav id="nav"></nav>
+<script>
+var KEY='parkir_v1',D=null,date='',tab='parkir',pend='';
+try{D=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+D=D||{tarif:{m:2000,s:1000},items:[],days:{}};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+function rp(n){return (n<0?'-':'')+Math.abs(n).toLocaleString('id-ID')}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+date=new Date().toLocaleDateString('sv-SE');
+function day(dt){dt=dt||date;var d=D.days[dt];if(!d){d={m:0,s:0,tm:D.tarif.m,ts:D.tarif.s,st:{},kas:[]};
+ var prev=Object.keys(D.days).filter(function(k){return k<dt}).sort().pop();
+ if(prev){var p=D.days[prev];D.items.forEach(function(it){var x=p.st[it.id];if(x)d.st[it.id]={s:x.s+(x.r||0)-x.t,t:0,r:0,rc:0}})}
+ D.days[dt]=d;save()}
+ D.items.forEach(function(it){if(!d.st[it.id])d.st[it.id]={s:0,t:0}});return d}
+function tot(d){var om=0;D.items.forEach(function(it){var x=d.st[it.id];if(x)om+=it.h*x.t});
+ var pk=d.m*d.tm+d.s*d.ts,mi=0,ke=0;d.kas.forEach(function(k){if(k.k==='m')mi+=k.j;else ke+=k.j});D.items.forEach(function(it){var y=d.st[it.id];if(y)ke+=(y.rc||0)});
+ return {om:om,pk:pk,mi:mi,ke:ke,net:om+pk+mi-ke}}
+function setDate(v){if(v){date=v;pend='';render()}}
+function go(t){tab=t;pend='';render()}
+function sisaOf(x){return x.s+(x.r||0)-x.t}
+function num(v){return Math.max(0,parseInt(v)||0)}
+function refresh(){var d=day(),t=tot(d),e=document.getElementById('pk');if(e)e.textContent='Rp '+rp(t.pk);
+ D.items.forEach(function(it){var x=d.st[it.id],a=document.getElementById('sa_'+it.id),b=document.getElementById('su_'+it.id);
+ if(a){a.textContent=sisaOf(x);a.className=(sisaOf(x)<0?'neg':'')}if(b)b.textContent='Omzet Rp '+rp(x.t*it.h)})}
+function setN(k,v){day()[k]=num(v);save();refresh()}
+function setTarif(k,v){v=num(v);D.tarif[k]=v;day()['t'+k]=v;save();refresh()}
+function setSt(id,f,v){day().st[id][f]=num(v);save();refresh()}
+function setH(id,v){D.items.forEach(function(it){if(it.id===id)it.h=num(v)});save();refresh()}
+function addItem(){var n=document.getElementById('in').value.trim(),h=num(document.getElementById('ih').value),s=num(document.getElementById('is').value);
+ if(!n||h<=0)return;var id='i'+Date.now();D.items.push({id:id,n:n,h:h});day().st[id]={s:s,t:0};save();render()}
+function delItem(id){if(pend!==id){pend=id;render();return}D.items=D.items.filter(function(i){return i.id!==id});pend='';save();render()}
+function addKas(){var k=document.getElementById('kk').value,n=document.getElementById('kn').value.trim(),j=num(document.getElementById('kj').value);
+ if(!n||j<=0)return;day().kas.push({k:k,n:n,j:j});save();render()}
+function delKas(i){var key='k'+i;if(pend!==key){pend=key;render();return}day().kas.splice(i,1);pend='';save();render()}
+function ins(d){var a=[['Parkir motor ('+d.m+' x '+rp(d.tm)+')',d.m*d.tm],['Parkir sepeda ('+d.s+' x '+rp(d.ts)+')',d.s*d.ts]];
+ D.items.forEach(function(it){var x=d.st[it.id];if(x.t>0)a.push([it.n+' ('+x.t+' x '+rp(it.h)+')',x.t*it.h])});
+ d.kas.forEach(function(k){if(k.k==='m')a.push([k.n,k.j])});return a}
+function outs(d){var a=[];D.items.forEach(function(it){var x=d.st[it.id];if(x&&x.rc>0)a.push(['Belanja stok '+it.n+(x.r?' ('+x.r+' pcs)':''),x.rc])});d.kas.forEach(function(k){if(k.k!=='m')a.push([k.n,k.j])});return a}
+function sum(a){return a.reduce(function(s,x){return s+x[1]},0)}
+function tgl(){return new Date(date+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function laporanText(){var d=day(),t=tot(d),I=ins(d),O=outs(d),L=['*LAPORAN HARIAN*',tgl(),'','*PEMASUKAN*'];
+ I.forEach(function(x){L.push(x[0]+': '+rp(x[1]))});L.push('*Total pemasukan: '+rp(sum(I))+'*','','*PENGELUARAN*');
+ if(!O.length)L.push('-');O.forEach(function(x){L.push(x[0]+': '+rp(x[1]))});
+ L.push('*Total pengeluaran: '+rp(sum(O))+'*','','*PENDAPATAN BERSIH: '+rp(t.net)+'*','','*STOK JAJANAN*');
+ D.items.forEach(function(it){var x=d.st[it.id];L.push(it.n+' (Rp '+rp(it.h)+')','   Stock '+x.s+' | Restok '+(x.r||0)+' | Jual '+x.t+' | Sisa '+(sisaOf(x)))});
+ return L.join('\n')}
+function copyLap(){var s=laporanText(),b=document.getElementById('cb');
+ function ok(){b.textContent='Tersalin ✓'}
+ function fb(){var a=document.createElement('textarea');a.value=s;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){b.textContent='Gagal salin'}a.remove()}
+ try{navigator.clipboard.writeText(s).then(ok,fb)}catch(e){fb()}}
+var NI='type="number" inputmode="numeric" onfocus="this.select()"';
+function vParkir(){var d=day(),t=tot(d);
+ function c(k,l,tr,tk){return '<div class="cnt"><div><div class="big">'+l+'</div><div class="mut">Tarif Rp <input '+NI+' value="'+tr+'" style="width:90px;display:inline-block;padding:3px 6px" oninput="setTarif(\''+tk+'\',this.value)"> / unit</div></div>'
+ +'<input '+NI+' placeholder="0" value="'+(d[k]||'')+'" style="width:100px;flex:none;font-size:22px;text-align:center" oninput="setN(\''+k+'\',this.value)"></div>'}
+ return '<div class="card"><h2>Parkir hari ini</h2>'+c('m','Motor',d.tm,'m')+c('s','Sepeda',d.ts,'s')
+ +'<div class="row" style="margin-top:8px"><span class="mut">Pendapatan parkir</span><span id="pk" class="big" style="text-align:right">Rp '+rp(t.pk)+'</span></div></div>'
+ +'<div class="card mut">Isi jumlah kendaraan hari ini. Otomatis masuk ke laporan.</div>'}
+function vJajan(){var d=day(),h='<div class="card"><h2>Tambah jajanan</h2><div class="row"><input id="in" placeholder="Nama (mis. Teh pucuk)"></div><div class="row" style="margin-top:8px"><input id="ih" '+NI+' placeholder="Harga"><input id="is" '+NI+' placeholder="Stock awal"></div><button style="width:100%;margin-top:8px" onclick="addItem()">Tambah</button></div><div class="card"><h2>Penjualan hari ini</h2>';
+ if(!D.items.length)h+='<div class="mut">Belum ada jajanan.</div>';
+ D.items.forEach(function(it){var x=d.st[it.id],sisa=sisaOf(x);
+ h+='<div class="it"><div class="row"><b style="flex:2">'+esc(it.n)+'</b><span class="mut" style="text-align:right">Rp <input '+NI+' value="'+it.h+'" style="width:80px;display:inline-block;padding:3px 6px" oninput="setH(\''+it.id+'\',this.value)"></span></div>'
+ +'<div class="row" style="margin-top:6px"><label class="mut">Stock awal<input '+NI+' placeholder="0" value="'+(x.s||'')+'" oninput="setSt(\''+it.id+'\',\'s\',this.value)"></label>'
+ +'<label class="mut">Terjual<input '+NI+' placeholder="0" value="'+(x.t||'')+'" oninput="setSt(\''+it.id+'\',\'t\',this.value)"></label>'
+ +'<div class="mut" style="text-align:center">Sisa<br><b id="sa_'+it.id+'" class="'+(sisa<0?'neg':'')+'" style="font-size:20px">'+sisa+'</b></div></div>'
+ +'<div class="row" style="margin-top:6px"><label class="mut">Restok (pcs)<input '+NI+' placeholder="0" value="'+(x.r||'')+'" oninput="setSt(\''+it.id+'\',\'r\',this.value)"></label><label class="mut">Total belanja (Rp)<input '+NI+' placeholder="0" value="'+(x.rc||'')+'" oninput="setSt(\''+it.id+'\',\'rc\',this.value)"></label></div>'
+ +'<div class="row" style="margin-top:6px"><span id="su_'+it.id+'" class="mut">Omzet Rp '+rp(x.t*it.h)+'</span><span style="text-align:right"><button class="'+(pend===it.id?'r':'g')+'" style="padding:4px 8px;font-size:12px" onclick="delItem(\''+it.id+'\')">'+(pend===it.id?'Yakin hapus?':'Hapus item')+'</button></span></div></div>'});
+ return h+'</div>'}
+function vKas(){var d=day(),h='<div class="card"><h2>Catat kas</h2><div class="mut" style="margin-bottom:8px">Parkir, jajanan, dan belanja stok (diisi di tab Jajanan) sudah otomatis masuk laporan. Di sini hanya untuk pengeluaran dan pemasukan lain.</div><div class="row"><select id="kk" style="flex:none;width:130px"><option value="k">Pengeluaran</option><option value="m">Pemasukan lain</option></select><input id="kn" placeholder="Keterangan (mis. Beli gas)"></div><div class="row" style="margin-top:8px"><input id="kj" '+NI+' placeholder="Jumlah"><button style="flex:none" onclick="addKas()">Simpan</button></div></div><div class="card"><h2>Kas hari ini</h2>';
+ if(!d.kas.length)h+='<div class="mut">Belum ada catatan.</div>';
+ d.kas.forEach(function(k,i){h+='<div class="it row"><span style="flex:2">'+esc(k.n)+'</span><b class="'+(k.k==='m'?'pos':'neg')+'" style="text-align:right">'+(k.k==='m'?'+':'-')+rp(k.j)+'</b><button class="'+(pend==='k'+i?'r':'g')+'" style="flex:none;padding:4px 8px" onclick="delKas('+i+')">'+(pend==='k'+i?'Yakin?':'×')+'</button></div>'});
+ return h+'</div>'}
+function rows(a){return a.map(function(x){return '<tr><td>'+esc(x[0])+'</td><td>'+rp(x[1])+'</td></tr>'}).join('')}
+function vLap(){var d=day(),t=tot(d),I=ins(d),O=outs(d),h='<div class="card"><h2>Laporan '+date+'</h2><h2>Pemasukan</h2><table>'+rows(I)+'<tr><th>Total pemasukan</th><th class="pos">'+rp(sum(I))+'</th></tr></table></div>'
+ +'<div class="card"><h2>Pengeluaran</h2><table>'+(O.length?rows(O):'<tr><td class="mut">Belum ada</td><td></td></tr>')+'<tr><th>Total pengeluaran</th><th class="neg">'+rp(sum(O))+'</th></tr></table></div>'
+ +'<div class="card"><div class="row"><span class="big">Pendapatan bersih</span><span class="big '+(t.net<0?'neg':'pos')+'" style="text-align:right">Rp '+rp(t.net)+'</span></div></div>'
+ +'<div class="card"><h2>Stok jajanan</h2><div class="wrap"><table><tr><th>Item</th><th>Harga</th><th>Stock</th><th>Restok</th><th>Jual</th><th>Sisa</th></tr>';
+ D.items.forEach(function(it){var x=d.st[it.id];h+='<tr><td>'+esc(it.n)+'</td><td>'+rp(it.h)+'</td><td>'+x.s+'</td><td>'+(x.r||0)+'</td><td>'+x.t+'</td><td>'+(sisaOf(x))+'</td></tr>'});
+ h+='</table></div><button id="cb" style="width:100%;margin-top:10px" onclick="copyLap()">Salin laporan (untuk WhatsApp)</button></div><div class="card"><h2>Riwayat</h2>';
+ Object.keys(D.days).sort().reverse().forEach(function(k){h+='<div class="it row" onclick="setDate(\''+k+'\')" style="cursor:pointer"><span>'+k+'</span><b style="text-align:right">'+rp(tot(D.days[k]).net)+'</b></div>'});
+ return h+'</div>'}
+function render(){document.getElementById('dt').value=date;
+ var v={parkir:vParkir,jajan:vJajan,kas:vKas,lap:vLap}[tab]();document.getElementById('app').innerHTML=v;
+ var T=[['parkir','Parkir'],['jajan','Jajanan'],['kas','Kas'],['lap','Laporan']];
+ document.getElementById('nav').innerHTML=T.map(function(x){return '<button class="'+(tab===x[0]?'on':'')+'" onclick="go(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')}
+render();
+</script></body></html>
